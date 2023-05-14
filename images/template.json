@@ -1,0 +1,38 @@
+{
+    "builders": [{
+        "type": "amazon-ebs",
+        "region": "us-east-1",
+        "source_ami_filter": {
+          "filters": {
+            "virtualization-type": "hvm",
+            "name": "amzn2-ami-hvm-2.0.*-x86_64-gp2",
+            "root-device-type": "ebs"
+          },
+          "owners": ["amazon"],
+          "most_recent": true
+        },
+        "instance_type": "t2.micro",
+        "ssh_username": "ec2-user",
+        "ami_name": "hashitalks-africa-{{timestamp}}"
+    }],
+    "provisioners": [{
+        "type": "file",
+        "source": "../app",
+        "destination": "/home/ec2-user"
+    },{
+        "type": "shell",
+        "inline": [
+            "sudo yum update -y",
+            "sudo yum install -y golang",
+            "cd /home/ec2-user/app && go mod tidy",
+            "go build /home/ec2-user/app/main.go",
+            "sudo mv /home/ec2-user/app/main /usr/bin/",
+            "sudo bash -c 'echo \"/usr/bin/main\" > /var/empty/main.sh'",
+            "sudo chmod +x /var/empty/main.sh",
+            "sudo bash -c 'cat > /etc/systemd/system/myapp.service << EOF\n[Unit]\nDescription=My Go App\n\n[Service]\nExecStart=/var/empty/main.sh\nRestart=always\nUser=root\nGroup=root\nEnvironment=PATH=/usr/bin:/bin:/usr/sbin:/sbin\n\n[Install]\nWantedBy=multi-user.target\nEOF'",
+            "sudo systemctl daemon-reload",
+            "sudo systemctl enable myapp",
+            "sudo systemctl start myapp"
+        ]
+    }]
+}
