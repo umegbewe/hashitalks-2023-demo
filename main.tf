@@ -2,9 +2,9 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_security_group" "allow_http" {
+resource "aws_security_group" "allow_traffic" {
   name        = "allow_http"
-  description = "Allow inbound HTTP traffic"
+  description = "Allow inbound traffic"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -19,6 +19,14 @@ resource "aws_security_group" "allow_http" {
     description = "HTTP from VPC"
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    ingress {
+    description = "SSH from VPC"
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -46,7 +54,7 @@ resource "aws_instance" "app_server" {
   instance_type = "t2.micro"
   key_name      = var.key_name
 
-  vpc_security_group_ids = [aws_security_group.allow_http.id]
+  vpc_security_group_ids = [aws_security_group.allow_traffic.id]
   subnet_id              = var.subnet_id
 
   tags = {
